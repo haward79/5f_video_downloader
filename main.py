@@ -27,18 +27,90 @@ def readUrl() -> str:
 
             return ''
 
-        elif url.startswith('http://') or url.startswith('https://'):
-
-            if url.count('www.porn5f.com/video/') == 1:
-                print('Accept url: ' + url)
-                return url
-            else:
-                print('Invalid url format. Please check the web page is a 5f video page.')
-
         else:
-            print('Invalid url format. The url must starts with "http" or "https" .')
+
+            isValid, msg = isValid5fUrl(url)
+        
+            if isValid:
+
+                print(msg)
+                return url
+
+            else:
+
+                print(msg)
 
         print()
+
+
+
+def readUrls() -> []:
+
+    urls = []
+    failedUrls = []
+    countSuccess = 0
+    countFailed = 0
+
+    choice = input('Do you want to read url(s) from file ? [y/N]')
+
+    # Read urls from file.
+    if choice.lower() == 'y':
+        
+        # Read valid file path.
+        while True:
+            
+            urlFilePath = input('Please input file path: ')
+
+            if os.path.isfile(urlFilePath):
+                break
+            else:
+                print('File : "{}" not found!\n'.format(urlFilePath))
+
+        # Read urls from file.
+        with open(urlFilePath, 'r') as fin:
+            tmp = fin.readlines()
+
+        # Append urls to list.
+        for i in tmp:
+
+            i = i.replace('\n', '')
+
+            if isValid5fUrl(i)[0]:
+                urls.append(i)
+                countSuccess += 1
+            else:
+                countFailed += 1
+                failedUrls.append(i)
+
+        print('Total : {} , Succeed : {} , Failed : {}'.format(countSuccess+countFailed, countSuccess, countFailed))
+
+        if countFailed > 0:
+
+            with open('invalid.txt', 'w') as fout:
+
+                for i in failedUrls:
+                    fout.write(i + '\n')
+
+            print('Invalid urls are stored in invalid.txt .\n')
+
+    # Read urls from keyboard.
+    else:
+
+        countUrls = 0
+        print('Please enter urls (one url per line): ')
+
+        while True:
+            
+            print('\nurl [' + str(countUrls) + '] > ')
+            url = readUrl()
+
+            if url == '':
+                break
+            else:
+                urls.append(url)
+                countUrls += 1
+
+    return urls
 
 
 
@@ -59,6 +131,24 @@ def curlGet(url: str) -> bytes:
     curl.close()
 
     return data.getvalue()
+
+
+
+def isValid5fUrl(url: str) -> bool:
+
+    if url == '':
+
+        return False, 'Url is empty !'
+
+    elif url.startswith('http://') or url.startswith('https://'):
+
+        if url.count('www.porn5f.com/video/') == 1:
+            return True, ('Accept url: ' + url)
+        else:
+            return False, 'Invalid url format. Please check the web page is a 5f video page.'
+
+    else:
+        return False, 'Invalid url format. The url must starts with "http" or "https" .'
 
 
 
@@ -197,6 +287,9 @@ def initialize() -> str:
     if choice.lower() == 'y':
         directoryPath = formatDirectoryPath(input('Please input directory path: '))
 
+        if not os.path.isdir(directoryPath):
+            os.makedirs(directoryPath)
+
     return directoryPath
 
 
@@ -213,19 +306,8 @@ countSuccess = 0
 countFailed = 0
 failedUrls = []
 
-print('Please enter urls (one url per line): ')
-
-# Read all urls.
-while True:
-    
-    print('\nurl [' + str(countUrls) + '] > ')
-    url = readUrl()
-
-    if url == '':
-        break
-    else:
-        urls.append(url)
-        countUrls += 1
+urls = readUrls()
+countUrls = len(urls)
 
 print()
 
